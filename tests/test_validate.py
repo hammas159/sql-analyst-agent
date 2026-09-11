@@ -39,8 +39,7 @@ class TestRejectsWrites:
 
     def test_write_hidden_in_a_cte(self):
         r = ok(
-            "WITH gone AS (DELETE FROM orders WHERE order_id = 1 RETURNING *) "
-            "SELECT * FROM gone"
+            "WITH gone AS (DELETE FROM orders WHERE order_id = 1 RETURNING *) SELECT * FROM gone"
         )
         assert not r.ok
 

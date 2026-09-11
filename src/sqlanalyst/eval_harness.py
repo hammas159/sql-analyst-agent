@@ -59,7 +59,9 @@ def run_eval() -> dict:
         if case.get("must_refuse"):
             # Questions that ask for a write. Correct behaviour is to fail, not comply.
             refused_unsafe.append(1.0 if result.failed else 0.0)
-            console.print(f"[dim]{'refused' if result.failed else 'COMPLIED'} :: {question[:60]}[/]")
+            console.print(
+                f"[dim]{'refused' if result.failed else 'COMPLIED'} :: {question[:60]}[/]"
+            )
             continue
 
         executed.append(0.0 if result.failed else 1.0)

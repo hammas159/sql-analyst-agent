@@ -23,15 +23,33 @@ DIALECT = "postgres"
 # Anything that is not a read. Checked against the parse tree, so a DELETE hidden
 # inside a CTE or a subquery is caught too.
 _FORBIDDEN_NODES = (
-    exp.Insert, exp.Update, exp.Delete, exp.Drop, exp.Create, exp.Alter,
-    exp.TruncateTable, exp.Grant, exp.Merge, exp.Command,
+    exp.Insert,
+    exp.Update,
+    exp.Delete,
+    exp.Drop,
+    exp.Create,
+    exp.Alter,
+    exp.TruncateTable,
+    exp.Grant,
+    exp.Merge,
+    exp.Command,
 )
 
 # Functions that read the filesystem, open connections, or burn the statement timeout.
 _FORBIDDEN_FUNCTIONS = {
-    "pg_sleep", "pg_read_file", "pg_read_binary_file", "pg_ls_dir", "lo_import",
-    "lo_export", "dblink", "dblink_exec", "pg_terminate_backend", "pg_cancel_backend",
-    "set_config", "pg_reload_conf", "query_to_xml",
+    "pg_sleep",
+    "pg_read_file",
+    "pg_read_binary_file",
+    "pg_ls_dir",
+    "lo_import",
+    "lo_export",
+    "dblink",
+    "dblink_exec",
+    "pg_terminate_backend",
+    "pg_cancel_backend",
+    "set_config",
+    "pg_reload_conf",
+    "query_to_xml",
 }
 
 # Catalog access is not analysis, and it leaks role and configuration detail.

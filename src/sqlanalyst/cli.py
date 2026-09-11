@@ -17,7 +17,9 @@ console = Console()
 @app.command()
 def ask(
     question: str,
-    show_trace: bool = typer.Option(False, "--trace", help="Show every attempt, including failures"),
+    show_trace: bool = typer.Option(
+        False, "--trace", help="Show every attempt, including failures"
+    ),
 ) -> None:
     """Ask a question in English."""
     from .agent import answer
@@ -99,8 +101,11 @@ def status() -> None:
             r = httpx.get(f"{s.ollama_base_url}/api/tags", timeout=5)
             models = [m["name"] for m in r.json().get("models", [])]
             hit = any(m.startswith(s.ollama_model.split(":")[0]) for m in models)
-            table.add_row("llm (ollama)", "[green]up[/]" if hit else "[yellow]no model[/]",
-                          f"{s.ollama_model} | {', '.join(models) or 'none installed'}")
+            table.add_row(
+                "llm (ollama)",
+                "[green]up[/]" if hit else "[yellow]no model[/]",
+                f"{s.ollama_model} | {', '.join(models) or 'none installed'}",
+            )
         except Exception as exc:
             table.add_row("llm (ollama)", "[red]down[/]", str(exc)[:60])
     else:
