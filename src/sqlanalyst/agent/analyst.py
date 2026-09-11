@@ -37,7 +37,7 @@ def _clean(raw: str) -> str:
     sql = sql.strip()
     # Drop any leading prose before the first statement keyword.
     match = re.search(r"\b(WITH|SELECT)\b", sql, re.I)
-    return sql[match.start():].strip().rstrip(";") if match else sql.rstrip(";")
+    return sql[match.start() :].strip().rstrip(";") if match else sql.rstrip(";")
 
 
 def answer(question: str) -> QueryResult:

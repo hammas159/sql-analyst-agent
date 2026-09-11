@@ -24,24 +24,66 @@ from sqlanalyst.config import get_settings  # noqa: E402
 RNG = random.Random(20260911)
 
 REGIONS = [
-    ("Punjab", "Pakistan"), ("Sindh", "Pakistan"), ("KPK", "Pakistan"),
-    ("Balochistan", "Pakistan"), ("Online", "Pakistan"),
+    ("Punjab", "Pakistan"),
+    ("Sindh", "Pakistan"),
+    ("KPK", "Pakistan"),
+    ("Balochistan", "Pakistan"),
+    ("Online", "Pakistan"),
 ]
 CATEGORIES = [
-    ("Electronics", None), ("Phones", "Electronics"), ("Laptops", "Electronics"),
-    ("Home", None), ("Kitchen", "Home"), ("Furniture", "Home"),
-    ("Apparel", None), ("Footwear", "Apparel"),
+    ("Electronics", None),
+    ("Phones", "Electronics"),
+    ("Laptops", "Electronics"),
+    ("Home", None),
+    ("Kitchen", "Home"),
+    ("Furniture", "Home"),
+    ("Apparel", None),
+    ("Footwear", "Apparel"),
 ]
-FIRST = "Ali Fatima Hassan Ayesha Bilal Zainab Omar Hira Usman Sana Tariq Nadia Imran Mariam Kashif".split()
-LAST = "Khan Ahmed Sheikh Malik Butt Qureshi Siddiqui Chaudhry Baig Abbasi".split()
+FIRST = [
+    "Ali",
+    "Fatima",
+    "Hassan",
+    "Ayesha",
+    "Bilal",
+    "Zainab",
+    "Omar",
+    "Hira",
+    "Usman",
+    "Sana",
+    "Tariq",
+    "Nadia",
+    "Imran",
+    "Mariam",
+    "Kashif",
+]
+LAST = [
+    "Khan",
+    "Ahmed",
+    "Sheikh",
+    "Malik",
+    "Butt",
+    "Qureshi",
+    "Siddiqui",
+    "Chaudhry",
+    "Baig",
+    "Abbasi",
+]
 PRODUCTS = [
-    ("Galaxy A54", "Phones", 210, 299), ("Pixel 8a", "Phones", 320, 449),
-    ("iPhone SE", "Phones", 340, 479), ("ThinkPad E14", "Laptops", 540, 749),
-    ("MacBook Air M2", "Laptops", 820, 1099), ("Aspire 5", "Laptops", 380, 529),
-    ("Air Fryer 5L", "Kitchen", 55, 89), ("Blender Pro", "Kitchen", 32, 59),
-    ("Rice Cooker", "Kitchen", 28, 45), ("Office Chair", "Furniture", 90, 159),
-    ("Standing Desk", "Furniture", 180, 299), ("Bookshelf", "Furniture", 60, 99),
-    ("Running Shoes", "Footwear", 38, 79), ("Leather Boots", "Footwear", 62, 129),
+    ("Galaxy A54", "Phones", 210, 299),
+    ("Pixel 8a", "Phones", 320, 449),
+    ("iPhone SE", "Phones", 340, 479),
+    ("ThinkPad E14", "Laptops", 540, 749),
+    ("MacBook Air M2", "Laptops", 820, 1099),
+    ("Aspire 5", "Laptops", 380, 529),
+    ("Air Fryer 5L", "Kitchen", 55, 89),
+    ("Blender Pro", "Kitchen", 32, 59),
+    ("Rice Cooker", "Kitchen", 28, 45),
+    ("Office Chair", "Furniture", 90, 159),
+    ("Standing Desk", "Furniture", 180, 299),
+    ("Bookshelf", "Furniture", 60, 99),
+    ("Running Shoes", "Footwear", 38, 79),
+    ("Leather Boots", "Footwear", 62, 129),
     ("Sandals", "Footwear", 15, 29),
 ]
 
@@ -53,8 +95,10 @@ def _name() -> str:
 def seed(conn: psycopg.Connection) -> None:
     cur = conn.cursor()
 
-    cur.execute("TRUNCATE order_items, orders, customers, products, categories, "
-                "employees, stores, regions RESTART IDENTITY CASCADE")
+    cur.execute(
+        "TRUNCATE order_items, orders, customers, products, categories, "
+        "employees, stores, regions RESTART IDENTITY CASCADE"
+    )
 
     cur.executemany("INSERT INTO regions(name, country) VALUES (%s, %s)", REGIONS)
 
@@ -97,9 +141,13 @@ def seed(conn: psycopg.Connection) -> None:
             cur.execute(
                 "INSERT INTO employees(name, store_id, manager_id, hired_on, salary) "
                 "VALUES (%s, %s, %s, %s, %s)",
-                (_name(), store, managers[store - 1],
-                 dt.date(RNG.randrange(2021, 2026), RNG.randrange(1, 13), RNG.randrange(1, 28)),
-                 RNG.randrange(60, 140) * 1000),
+                (
+                    _name(),
+                    store,
+                    managers[store - 1],
+                    dt.date(RNG.randrange(2021, 2026), RNG.randrange(1, 13), RNG.randrange(1, 28)),
+                    RNG.randrange(60, 140) * 1000,
+                ),
             )
 
     for _ in range(400):
@@ -108,9 +156,12 @@ def seed(conn: psycopg.Connection) -> None:
         region = None if RNG.random() < 0.15 else RNG.randrange(1, 5)
         cur.execute(
             "INSERT INTO customers(name, region_id, signed_up_on, segment) VALUES (%s,%s,%s,%s)",
-            (_name(), region,
-             dt.date(RNG.randrange(2021, 2026), RNG.randrange(1, 13), RNG.randrange(1, 28)),
-             RNG.choices(["retail", "business", "wholesale"], weights=[70, 22, 8])[0]),
+            (
+                _name(),
+                region,
+                dt.date(RNG.randrange(2021, 2026), RNG.randrange(1, 13), RNG.randrange(1, 28)),
+                RNG.choices(["retail", "business", "wholesale"], weights=[70, 22, 8])[0],
+            ),
         )
 
     start = dt.datetime(2024, 1, 1, tzinfo=dt.UTC)
@@ -129,8 +180,8 @@ def seed(conn: psycopg.Connection) -> None:
         )[0]
         # Delivered-but-refunded exists on purpose: it is the case that breaks a
         # revenue query which filters on the wrong status column.
-        payment = "refunded" if RNG.random() < 0.05 else (
-            "pending" if status == "placed" else "paid"
+        payment = (
+            "refunded" if RNG.random() < 0.05 else ("pending" if status == "placed" else "paid")
         )
 
         cur.execute(
@@ -148,16 +199,29 @@ def seed(conn: psycopg.Connection) -> None:
             cur.execute(
                 "INSERT INTO order_items(order_id, product_id, quantity, unit_price, discount) "
                 "VALUES (%s,%s,%s,%s,%s)",
-                (order_id, product_id, RNG.randrange(1, 5), unit_price,
-                 round(RNG.choice([0, 0, 0, 0.05, 0.1, 0.15]), 3)),
+                (
+                    order_id,
+                    product_id,
+                    RNG.randrange(1, 5),
+                    unit_price,
+                    round(RNG.choice([0, 0, 0, 0.05, 0.1, 0.15]), 3),
+                ),
             )
 
     conn.commit()
-    cur.execute("ANALYZE")   # row estimates feed the schema prompt
+    cur.execute("ANALYZE")  # row estimates feed the schema prompt
     conn.commit()
 
-    for table in ("regions", "stores", "employees", "categories", "products",
-                  "customers", "orders", "order_items"):
+    for table in (
+        "regions",
+        "stores",
+        "employees",
+        "categories",
+        "products",
+        "customers",
+        "orders",
+        "order_items",
+    ):
         n = cur.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
         print(f"  {table:<12} {n:>6,}")
 
