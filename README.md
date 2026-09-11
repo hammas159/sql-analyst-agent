@@ -135,3 +135,63 @@ No GPU required.
 ## License
 
 MIT
+
+---
+
+## Run it yourself
+
+```bash
+git clone https://github.com/hammas159/sql-analyst-agent
+cd sql-analyst-agent
+
+make up        # Postgres 17 on :5434
+make install   # uv sync, writes .env
+make seed      # 2,219 orders / 4,457 line items — generated offline, deterministic
+make status    # checks everything, and *proves* the agent role cannot write
+```
+
+`make status` on a real database:
+
+```
+| admin connection  | up  | 8 tables                    |
+| agent (read-only) | up  | postgresql://agent_ro@...   |
+| write blocked     | yes | ReadOnlySqlTransaction      |   <- attempted, not claimed
+```
+
+A real query against the seeded warehouse:
+
+```
+"total revenue by region"
+  Punjab 1,503,870.64 | Sindh 812,435.02 | KPK 727,101.85
+```
+
+And the attacks, each refused with a specific reason:
+
+```
+DELETE FROM orders                          → only SELECT is permitted
+SELECT 1 FROM orders; DROP TABLE customers  → expected exactly one statement, got 2
+SELECT pg_sleep(30) FROM orders             → function pg_sleep() is not permitted
+SELECT * FROM sales_summary                 → unknown table: sales_summary
+```
+
+To ask questions in English, add an LLM backend — `ollama pull qwen2.5:3b-instruct`, or
+set `ANTHROPIC_API_KEY`. Everything above works without one.
+
+## Problems hit while building this
+
+**The dangerous version of this project is the one that looks finished.** A text-to-SQL
+demo that works on happy-path questions is easy; the failure modes are all adversarial
+and none of them show up in a demo. So the validator is tested against the techniques
+that actually defeat naive guards — stacked statements, a `DELETE` hidden inside a CTE, a
+keyword inside a string literal, casing, comments — and each is a test that must fail
+closed.
+
+**A regex-based guard was the first design, and it is indefensible.** `"DELETE" not in
+sql.upper()` is defeated by a comment, by casing, by a nested query, and by the perfectly
+legitimate query `WHERE name = 'delete from orders'`. *Replaced* with a `sqlglot` parse
+tree, so the check inspects what the SQL *is* rather than what it looks like.
+
+**Unknown tables are caught before the database sees them.** Not for safety — for the
+repair loop. `unknown table 'sales_summary'. Available: categories, customers, ...` is a
+far stronger prompt for self-correction than Postgres's `relation does not exist`, and it
+saves a round trip.
