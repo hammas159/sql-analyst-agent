@@ -1,0 +1,112 @@
+"""Read the live schema and render it for the model.
+
+Grounding the model in the real schema is what separates a text-to-SQL system from
+a guessing machine. Column comments and row estimates are included because both
+change the SQL a model writes: comments disambiguate look-alike columns, and row
+counts tell it which table is the fact table.
+"""
+
+from __future__ import annotations
+
+from functools import lru_cache
+
+import psycopg
+from psycopg.rows import dict_row
+
+from ..config import get_settings
+from ..types import Column, Table
+
+_COLUMNS = """
+SELECT c.table_name, c.column_name, c.data_type, c.is_nullable,
+       COALESCE(pgd.description, '') AS comment
+FROM information_schema.columns c
+JOIN pg_class pc     ON pc.relname = c.table_name
+JOIN pg_namespace pn ON pn.oid = pc.relnamespace AND pn.nspname = c.table_schema
+LEFT JOIN pg_description pgd
+       ON pgd.objoid = pc.oid AND pgd.objsubid = c.ordinal_position
+WHERE c.table_schema = 'public'
+ORDER BY c.table_name, c.ordinal_position
+"""
+
+_KEYS = """
+SELECT tc.table_name, tc.constraint_type, kcu.column_name,
+       ccu.table_name AS ref_table, ccu.column_name AS ref_column
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu
+     ON kcu.constraint_name = tc.constraint_name AND kcu.table_schema = tc.table_schema
+LEFT JOIN information_schema.constraint_column_usage ccu
+     ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema
+WHERE tc.table_schema = 'public'
+  AND tc.constraint_type IN ('PRIMARY KEY', 'FOREIGN KEY')
+"""
+
+_ROWS = """
+SELECT relname AS table_name, GREATEST(n_live_tup, 0) AS rows
+FROM pg_stat_user_tables
+"""
+
+
+@lru_cache(maxsize=1)
+def describe_schema() -> dict[str, Table]:
+    """Introspected with the admin role: reading the catalog is not the agent's job."""
+    with psycopg.connect(get_settings().admin_dsn, row_factory=dict_row) as conn:
+        cols = conn.execute(_COLUMNS).fetchall()
+        keys = conn.execute(_KEYS).fetchall()
+        rows = {r["table_name"]: r["rows"] for r in conn.execute(_ROWS).fetchall()}
+
+    tables: dict[str, Table] = {}
+    for row in cols:
+        t = tables.setdefault(
+            row["table_name"],
+            Table(name=row["table_name"], columns=[], row_estimate=rows.get(row["table_name"], 0)),
+        )
+        t.columns.append(
+            Column(
+                name=row["column_name"],
+                type=row["data_type"],
+                nullable=row["is_nullable"] == "YES",
+                comment=row["comment"],
+            )
+        )
+
+    for row in keys:
+        t = tables.get(row["table_name"])
+        if not t:
+            continue
+        if row["constraint_type"] == "PRIMARY KEY":
+            t.primary_key.append(row["column_name"])
+        elif row["ref_table"]:
+            t.foreign_keys.append((row["column_name"], row["ref_table"], row["ref_column"]))
+
+    return tables
+
+
+def schema_prompt(tables: dict[str, Table] | None = None) -> str:
+    """Render the schema as compact DDL.
+
+    DDL rather than prose: it is the form models have seen most of during training,
+    and it is unambiguous. Foreign keys are spelled out because join paths are where
+    text-to-SQL most often goes wrong.
+    """
+    tables = tables or describe_schema()
+    out: list[str] = []
+
+    for name, table in sorted(tables.items()):
+        out.append(f"CREATE TABLE {name} (")
+        lines = []
+        for col in table.columns:
+            bits = [f"  {col.name} {col.type}"]
+            if not col.nullable:
+                bits.append("NOT NULL")
+            if col.name in table.primary_key:
+                bits.append("PRIMARY KEY")
+            line = " ".join(bits)
+            if col.comment:
+                line += f"    -- {col.comment}"
+            lines.append(line)
+        for col, ref_table, ref_col in table.foreign_keys:
+            lines.append(f"  FOREIGN KEY ({col}) REFERENCES {ref_table}({ref_col})")
+        out.append(",\n".join(lines))
+        out.append(f");  -- ~{table.row_estimate:,} rows\n")
+
+    return "\n".join(out)
