@@ -1,0 +1,64 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --all-groups
+      - name: Lint
+        run: |
+          uv run ruff check src tests scripts
+          uv run ruff format --check src tests
+      - name: Unit tests
+        # The validator and the chart heuristic are pure functions - no database,
+        # no model - which is exactly why they are the parts under test.
+        run: uv run pytest -q
+
+  sandbox:
+    # Proves the read-only role really is read-only, against a real Postgres,
+    # on every push. A claim in a README is not evidence.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: analyst
+          POSTGRES_PASSWORD: analyst
+          POSTGRES_DB: retail
+        ports: ["5434:5432"]
+        options: >-
+          --health-cmd "pg_isready -U analyst" --health-interval 5s
+          --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply schema and roles
+        env: { PGPASSWORD: analyst }
+        run: |
+          psql -h localhost -p 5434 -U analyst -d retail -v ON_ERROR_STOP=1 -f docker/01-schema.sql
+          psql -h localhost -p 5434 -U analyst -d retail -v ON_ERROR_STOP=1 -f docker/02-roles.sql
+      - name: The agent role must be able to read
+        env: { PGPASSWORD: agent_ro }
+        run: psql -h localhost -p 5434 -U agent_ro -d retail -c "SELECT count(*) FROM customers"
+      - name: The agent role must NOT be able to write
+        env: { PGPASSWORD: agent_ro }
+        run: |
+          for stmt in \
+            "INSERT INTO customers(name, signed_up_on, segment) VALUES ('x', now(), 'retail')" \
+            "UPDATE products SET list_price = 0" \
+            "DELETE FROM orders" \
+            "DROP TABLE customers" \
+            "CREATE TABLE evil (x int)"; do
+            if psql -h localhost -p 5434 -U agent_ro -d retail -c "$stmt" 2>/dev/null; then
+              echo "SECURITY FAILURE: agent_ro executed: $stmt"; exit 1
+            fi
+            echo "correctly refused: $stmt"
+          done
