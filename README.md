@@ -1,4 +1,4 @@
-# sql-analyst-agent
+# sql-analyst-agent (FastAPI, PostgreSQL, sqlglot, Anthropic)
 
 [![ci](https://github.com/hammas159/sql-analyst-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/hammas159/sql-analyst-agent/actions/workflows/ci.yml)
 ![python](https://img.shields.io/badge/python-3.12-blue)
