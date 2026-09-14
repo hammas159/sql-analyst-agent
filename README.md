@@ -1,20 +1,45 @@
-# sql-analyst-agent (FastAPI, PostgreSQL, sqlglot, Anthropic)
+<h1 align="center">sql-analyst-agent</h1>
+<p align="center"><i>Ask a database questions in English. It cannot damage the database, and it shows you the SQL</i></p>
 
-[![ci](https://github.com/hammas159/sql-analyst-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/hammas159/sql-analyst-agent/actions/workflows/ci.yml)
-![python](https://img.shields.io/badge/python-3.12-blue)
-![postgres](https://img.shields.io/badge/postgres-17-336791)
-![license](https://img.shields.io/badge/license-MIT-green)
+<p align="center">
+  <a href="#the-part-that-matters-it-is-not-allowed-to-write">It cannot write</a> &middot;
+  <a href="#self-repair">Self-repair</a> &middot;
+  <a href="#a-schema-built-to-be-hard">A hard schema</a> &middot;
+  <a href="#evaluation">Evaluation</a> &middot;
+  <a href="#quick-start">Quick start</a> &middot;
+  <a href="#problems-hit-while-building-this">Problems hit</a>
+</p>
 
-**Ask a database questions in English. It cannot damage the database, and it shows
-you the SQL.**
-
-Schema grounding → SQL generation → **parse-tree validation** → execution as a role
-with no write privileges → self-repair from the real database error → plain-English
-explanation and a chart.
+<p align="center">
+  <a href="https://github.com/hammas159/sql-analyst-agent/actions/workflows/ci.yml"><img src="https://github.com/hammas159/sql-analyst-agent/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="python">
+  <img src="https://img.shields.io/badge/postgres-read--only%20role-336791" alt="postgres">
+  <img src="https://img.shields.io/badge/stack-FastAPI%20%C2%B7%20sqlglot-orange" alt="stack">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"></a>
+</p>
 
 ---
 
 ## The part that matters: it is not allowed to write
+
+```mermaid
+flowchart LR
+    Q["question in English"] --> S["schema grounding"]
+    S --> G["SQL generation"]
+    G --> V{"parse-tree validation<br/>sqlglot"}
+    V -->|"writes detected"| X["reject"]
+    V -->|"read-only"| E["execute as a role with<br/>NO write privileges"]
+    E -->|"database error"| SR["self-repair from<br/>the real error"]
+    SR --> V
+    E --> A["answer + the SQL"]
+
+    style X fill:#dc2626,color:#fff
+    style A fill:#16a34a,color:#fff
+```
+
+**Two independent defences.** The parse tree rejects writes before execution, and the
+database role could not perform one anyway. Either alone is a single point of failure.
+
 
 Most text-to-SQL demos put "do not write to the database" in the prompt and hope.
 Here there are three layers, and the weakest one is the prompt:
@@ -131,6 +156,10 @@ scripts/seed.py      deterministic offline data generator
 - An LLM backend: Ollama locally, or an API key
 
 No GPU required.
+
+## Keywords
+
+text-to-SQL &middot; natural language to SQL &middot; SQL agent &middot; sqlglot &middot; parse tree validation &middot; SQL injection prevention &middot; read-only role &middot; PostgreSQL &middot; schema grounding &middot; self-repair &middot; LLM agents &middot; database security &middot; FastAPI &middot; Spider benchmark &middot; data analyst agent
 
 ## License
 
