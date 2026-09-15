@@ -1,0 +1,60 @@
+2026-09-14 10:30:37.120 Uvicorn server started on :::8546
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8546
+  Network URL: http://192.168.100.34:8546
+  External URL: http://59.103.108.231:8546
+
++------------------------- Traceback (most recent call last) --------------------------+
+| D:\github\rag-forge\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code |
+| .py:136 in exec_func_with_error_handling                                             |
+|                                                                                      |
+| D:\github\rag-forge\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_ru |
+| nner.py:827 in code_to_exec                                                          |
+|                                                                                      |
+| D:\github\sql-analyst-agent\ui\app.py:18 in <module>                                 |
+|                                                                                      |
+|   15                                                                                 |
+|   16 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))            |
+|   17                                                                                 |
+| > 18 from sqlanalyst.agent import answer  # noqa: E402                               |
+|   19 from sqlanalyst.config import get_settings  # noqa: E402                        |
+|   20 from sqlanalyst.schema import describe_schema  # noqa: E402                     |
+|   21 from sqlanalyst.sql.execute import healthy  # noqa: E402                        |
+|                                                                                      |
+| D:\github\sql-analyst-agent\src\sqlanalyst\agent\__init__.py:1 in <module>           |
+|                                                                                      |
+| > 1 from .analyst import answer                                                      |
+|   2                                                                                  |
+|   3 __all__ = ["answer"]                                                             |
+|   4                                                                                  |
+|                                                                                      |
+| D:\github\sql-analyst-agent\src\sqlanalyst\agent\analyst.py:17 in <module>           |
+|                                                                                      |
+|    14 from ..config import get_settings                                              |
+|    15 from ..llm import get_llm                                                      |
+|    16 from ..schema import describe_schema, schema_prompt                            |
+| >  17 from ..sql import validate                                                     |
+|    18 from ..sql.execute import QueryError, run                                      |
+|    19 from ..types import Attempt, QueryResult                                       |
+|    20 from .charts import suggest                                                    |
+|                                                                                      |
+| D:\github\sql-analyst-agent\src\sqlanalyst\sql\__init__.py:1 in <module>             |
+|                                                                                      |
+| > 1 from .validate import validate                                                   |
+|   2                                                                                  |
+|   3 __all__ = ["validate"]                                                           |
+|   4                                                                                  |
+|                                                                                      |
+| D:\github\sql-analyst-agent\src\sqlanalyst\sql\validate.py:16 in <module>            |
+|                                                                                      |
+|    13                                                                                |
+|    14 from __future__ import annotations                                             |
+|    15                                                                                |
+| >  16 from sqlglot import exp, parse                                                 |
+|    17 from sqlglot.errors import ParseError                                          |
+|    18                                                                                |
+|    19 from ..types import Validation                                                 |
++--------------------------------------------------------------------------------------+
+ModuleNotFoundError: No module named 'sqlglot'
