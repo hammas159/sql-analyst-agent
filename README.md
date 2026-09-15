@@ -110,7 +110,7 @@ make ui        # Streamlit on :8502
 ```
 
 The dataset is generated from a fixed seed, so your database is byte-identical to
-the one the numbers in [`RESULTS.md`](RESULTS.md) were measured on.
+the one the numbers in `RESULTS.md` were measured on.
 
 ### LLM backend
 
