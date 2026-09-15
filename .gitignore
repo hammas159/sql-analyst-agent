@@ -33,3 +33,6 @@ node_modules/
 # OS
 .DS_Store
 Thumbs.db
+
+# stray log from a headless screenshot session
+.shot.log
