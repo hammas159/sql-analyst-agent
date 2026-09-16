@@ -10,6 +10,7 @@ if the model had emitted them.
 The third layer is the database role itself, which CI exercises on every push
 by attempting real writes as the agent user.
 """
+
 import sys
 
 sys.path.insert(0, "src")
@@ -36,7 +37,7 @@ print()
 
 print("OUTPUT")
 allowed = blocked = 0
-for sql, note in STATEMENTS:
+for sql, _note in STATEMENTS:
     v = validate(sql, max_rows=1000, known_tables=KNOWN)
     if v.ok:
         allowed += 1
