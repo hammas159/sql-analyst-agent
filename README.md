@@ -66,6 +66,27 @@ A security claim in a README is not evidence.
 
 `make status` runs the same proof locally, by actually trying to create a table.
 
+---
+
+## Input
+
+![input](docs/images/input.png)
+
+## Output
+
+`python demo.py`
+
+![output](docs/images/output.png)
+
+*The stacked statement is the one worth looking at. `SELECT * FROM orders; DROP TABLE
+orders` begins with a legitimate read, so a check that only inspected the first keyword
+would pass it. It is rejected for statement count, before anything about its content is
+considered.*
+
+*Every allowed query also comes back rewritten with a `LIMIT` it did not ask for.*
+
+---
+
 ## Self-repair
 
 A model writing SQL against an unfamiliar schema gets it wrong, and the useful
