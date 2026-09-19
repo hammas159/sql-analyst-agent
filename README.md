@@ -1,4 +1,4 @@
-<h1 align="center">sql-analyst-agent</h1>
+<h1 align="center">sql-analyst-agent (FastAPI · PostgreSQL · SQLGlot · Anthropic API)</h1>
 <p align="center"><i>Ask a database questions in English. It cannot damage the database, and it shows you the SQL</i></p>
 
 <p align="center">
